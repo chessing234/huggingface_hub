@@ -18,7 +18,10 @@ class FeatherlessTextGenerationTask(BaseTextGenerationTask):
         self, inputs: Any, parameters: dict, provider_mapping_info: InferenceProviderMapping
     ) -> dict | None:
         params = filter_none(parameters.copy())
-        params["max_tokens"] = params.pop("max_new_tokens", None)
+        # Only rename a value the caller actually set. `pop(..., None)` would otherwise put
+        # `"max_tokens": null` in the JSON body.
+        if (max_tokens := params.pop("max_new_tokens", None)) is not None:
+            params["max_tokens"] = max_tokens
 
         return {"prompt": inputs, **params, "model": provider_mapping_info.provider_id}
 

@@ -21,6 +21,7 @@ from huggingface_hub.inference._providers.cohere import CohereConversationalTask
 from huggingface_hub.inference._providers.deepinfra import (
     DeepInfraAutomaticSpeechRecognitionTask,
     DeepInfraFeatureExtractionTask,
+    DeepInfraTextGenerationTask,
     DeepInfraTextToSpeechTask,
 )
 from huggingface_hub.inference._providers.fal_ai import (
@@ -878,6 +879,30 @@ class TestFeatherlessAIProvider:
 
         helper = FeatherlessTextGenerationTask()
         assert helper._prepare_url("rc_xxxx", "ownner/model_id") == "https://api.featherless.ai/v1/completions"
+
+    def test_text_generation_omits_max_tokens_when_unset(self):
+        helper = FeatherlessTextGenerationTask()
+        mapping = InferenceProviderMapping(
+            provider="featherless-ai",
+            hf_model_id="org/model",
+            providerId="org/model",
+            task="text-generation",
+            status="live",
+        )
+        payload = helper._prepare_payload_as_dict("hello", {}, mapping)
+        assert "max_tokens" not in payload
+        assert helper._prepare_payload_as_dict("hello", {"max_new_tokens": 12}, mapping)["max_tokens"] == 12
+
+        deepinfra = DeepInfraTextGenerationTask()
+        mapping = InferenceProviderMapping(
+            provider="deepinfra",
+            hf_model_id="org/model",
+            providerId="org/model",
+            task="text-generation",
+            status="live",
+        )
+        assert "max_tokens" not in deepinfra._prepare_payload_as_dict("hello", {}, mapping)
+        assert deepinfra._prepare_payload_as_dict("hello", {"max_new_tokens": 4}, mapping)["max_tokens"] == 4
 
 
 class TestFireworksAIConversationalTask:
